@@ -1,0 +1,78 @@
+<?php
+$_helper = Mage::helper('catalog/category');
+$categories = arrange_cat(5);
+
+function arrange_cat($cats) {
+$cats = Mage::getModel('catalog/category')->load($cats)->getChildren();
+if(count($cats) > 0){
+$catIds = explode(',',$cats);
+$categories = array();    
+foreach($catIds as $catId) {
+       $category = Mage::getModel('catalog/category')->load($catId); 
+       if($category->getId() !=''){
+       $categories[] = array(
+	   'id' =>$category->getId(),
+	   'name' =>$category->getName(),
+	   'url' =>$category->getUrl(),
+	   );
+       }
+} 
+}
+return $categories;
+}
+
+function compareByName($categories, $b) {
+  return strcmp($categories['name'], $b['name']);
+}
+usort($categories, 'compareByName');
+if (count($categories) > 0){
+    echo $this->__('<h4> Our brands </h4>');    
+    echo "<nav><ul class='category_nav'>";
+    foreach($categories as $_category){
+        $_subcategories = array();
+        if($_category['id']!=''){
+        $_subcategories = arrange_cat($_category['id']);
+		usort($_subcategories, 'compareByName');
+        }
+       
+      //  //print_r($_subcategories);
+      /*
+        echo "<pre>";
+        print_r($_subcategories);
+        echo "</pre>";
+      */  
+            echo "<li>";
+               // echo "<a href='".$_helper->getCategoryUrl($_category)."'>".$_category->getName();
+                echo "<a href='".$_category['url']."'>".$_category['name'];
+                echo "</a>";
+            if (count($_subcategories) > 0){    
+                echo "<ul>";  
+                  
+                foreach($_subcategories as $_subcategory){
+					
+                    $_subsubcats = arrange_cat($_subcategory['id']);  
+					usort($_subsubcats, 'compareByName');					
+                          echo "<li><a href='".$_subcategory['url']."'>".$_subcategory['name'];
+                                echo "</a>";
+                     if (count($_subcategory) > 0){    
+                    echo "<ul>";  
+                      
+                        foreach($_subsubcats as $_subcategory_three){
+                             
+                              echo "<li><a href='".$_subcategory_three['url']."'>".$_subcategory_three['name'];
+                                    echo "</a></li>";
+                             
+                        }
+                    echo "</ul>";  
+                   }   
+                     echo "</li>";
+                     
+                }
+                echo "</ul>";  
+               }   
+            echo "</li>"; 
+        
+    }
+    echo "</ul></nav>";
+} 
+?>

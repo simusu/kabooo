@@ -1,0 +1,277 @@
+<?php
+$category = Mage::getSingleton('catalog/layer')->getCurrentCategory();
+$categoriesid = array();
+$categories = $category->getCollection()
+        ->addAttributeToSelect(array('name', 'thumbnail','description'))
+        ->addAttributeToFilter('is_active', 1)
+        ->addIdFilter($category->getChildren());
+     
+    
+   //$this->_reviewsHelperBlock = $this->getLayout()->createBlock('review/helper');
+
+    //print_r($category);
+    $storeId = Mage::app()->getStore()->getId();
+
+   /* $products =array();
+    $cats = Mage::getModel('catalog/category')->load($category->getId())->getChildren();
+    $catIds = explode(',',$cats);
+   // print_r($catIds);
+    if($catIds[0] !=''){
+        if(count($products)==0){
+            foreach($catIds as $sub_1){
+                echo $sub_1.'aaa';
+                 $products = Mage::getModel('catalog/product')->load($sub_1)->getProductCollection();
+                 $sub_1_cat = Mage::getModel('catalog/category')->load($sub_1)->getChildren();
+                 $catIds_2 = explode(',',$sub_1_cat);
+                 if($catIds_2[0] !=''){
+                    if(count($products)==0){
+
+                        foreach($catIds_2 as $sub_2){
+                            echo $sub_2.'bbb';
+                          $products = Mage::getModel('catalog/product')->load($sub_2)->getProductCollection();
+                          $sub_2_cat = Mage::getModel('catalog/category')->load($sub_2)->getChildren();
+                          $catIds_3 = explode(',',$sub_2_cat);
+
+                            if($catIds_3[0] !=''){
+                                    if(count($products)==0){
+                                        foreach($catIds_3 as $sub_3){
+                                            echo $sub_3.'ccc';
+                                          $products = Mage::getModel('catalog/product')->load($sub_3)->getProductCollection();
+                                          $sub_3_cat = Mage::getModel('catalog/category')->load($sub_3)->getChildren();
+                                          }
+                                    }
+                                 }
+                          }
+                    }
+                 }
+             }
+        }
+    } */
+
+
+    $_main_cat_id = $category->getId();
+
+    $all_subcats = implode(',',find_child($_main_cat_id));
+
+    function find_child($cat_id)
+    {
+        $cat = Mage::getModel('catalog/category')->load($cat_id);
+        if($subcats = $cat->getChildren())
+        {
+            $subcats_arr = explode(',' , $subcats);
+            $a[] = $cat_id;
+            foreach($subcats_arr as $x=>$v):
+                $a =  array_merge($a , find_child($v));
+            endforeach;
+            return $a;
+        }
+        else
+            return array($cat_id);
+    }
+
+
+    $collection = mage::getModel('catalog/product')->getCollection()
+        ->joinField('category_id',
+            'catalog/category_product',
+            'category_id',
+            'product_id=entity_id',
+            null,
+            'left')
+        ->addAttributeToFilter('category_id', array('in' => explode(',' , $all_subcats)));
+    $collection->getSelect()->group('e.entity_id');
+
+    $product_ids =array();
+
+    $i=1;
+    foreach($collection as $_product):
+
+        $summaryData = Mage::getModel('review/review_summary')
+            ->setStoreId($storeId)
+            ->load($_product->getId());
+
+        if ($summaryData['rating_summary']){
+             //if($i <= 5){
+            $product_ids[] = $_product->getId();
+             $i++;
+            //}
+        }
+
+    endforeach;
+
+
+  /* $products = Mage::getModel('catalog/category')->load(18)->getProductCollection();
+    $i=1;
+    foreach($products as $product){
+        $product = Mage::getModel('catalog/product')->load($product->getId());
+        $summaryData = Mage::getModel('review/review_summary')
+        					->setStoreId($storeId)
+        					->load($product->getId());
+
+        if ($summaryData['rating_summary']!=''){
+           // if($i <= 5){
+            $product_ids[] = $product->getId();
+           // $i++;
+           // }
+         }
+    } */
+    
+    //$str_product_ids = implode(',',$product_ids);
+    $str_product_ids = $product_ids;
+    
+    //print_r($str_product_ids);
+    
+    //echo $str_product_ids;exit();
+
+
+    $reviewcollection = Mage::getModel('review/review')->getCollection()
+        ->addStoreFilter(Mage::app()->getStore()->getId())
+        ->addStatusFilter(Mage_Review_Model_Review::STATUS_APPROVED)
+        ->addFieldToFilter('entity_id', Mage_Review_Model_Review::ENTITY_PRODUCT)
+        ->addFieldToFilter('entity_pk_value', array('in' => $str_product_ids))
+        ->setDateOrder('desc')
+        ->setPageSize(5)
+        ->addRateVotes();
+        
+    
+    
+    $_items = $reviewcollection->getItems();  
+    
+    
+?>
+
+<ul id="top_level_cat" class="subcategories">
+    <?php foreach ($categories as $category): ?>
+        <li>
+            <div class="product-title_bg">
+                <h4 class="category_title"><a  href="<?php echo $category->getUrl() ?>"><?php echo $category->getName() ?></a></h4>
+                <a href="<?php echo $category->getUrl() ?>"><img src="<?php echo Mage::getBaseUrl(Mage_Core_Model_Store::URL_TYPE_MEDIA) . 'catalog/category/'  . $category->getThumbnail() ?>" alt="<?php echo $this->htmlEscape($category->getName()) ?>" /></a>
+            </div>
+            <div class="category-description">
+                <div class="category-description-inner">
+                    
+                    <p><?php echo $category->getDescription() ?></p>
+                </div>
+            </div>
+                
+        </li>
+    <?php 
+    $categoriesid[]=$category->getId;
+    endforeach; ?>
+</ul>
+<div class="category_trustpilot_home">
+    <?php echo $this->getLayout()->createBlock('cms/block')->setBlockId('trustpilot_home')->toHtml(); ?>
+</div>
+
+<div class="review_bestselling clearfix">
+<div class="review_bestselling_right">
+    <?php
+     $storeId    = Mage::app()->getStore()->getId();
+ 
+        $arr_productids = $this->getProductByCategory();
+        $products = Mage::getResourceModel('reports/product_collection')
+        //->addAttributeToSelect('*')
+            ->addOrderedQty()
+        ->addMinimalPrice()
+        ->addAttributeToSelect(array('name', 'price', 'small_image'))
+        ->setStoreId($storeId)
+        ->addStoreFilter($storeId)
+        ->setOrder('ordered_qty', 'desc');
+                $products->joinField('category_id',
+                    'catalog/category_product',
+                    'category_id',
+                    'product_id=entity_id',
+                    null,
+                    'left');
+        $products->addAttributeToFilter('category_id', array('in' => explode(',' , $all_subcats)));  
+        Mage::getSingleton('catalog/product_status')->addVisibleFilterToCollection($products);
+        Mage::getSingleton('catalog/product_visibility')->addVisibleInCatalogFilterToCollection($products);
+        $products->setPageSize(5);
+    ?>
+ <div class="box best-selling">
+<h3><?php echo $this->__('Best verkochte producten');?></h3>
+<div class="best-selling-inner">
+<ul>
+    <?php $counter=0; foreach ($products as $product):
+    $my_product = Mage::getModel('catalog/product')->load($product->getId());
+     ?>
+        <li>
+            <a class="bprodut_image" href="<?php echo $this->getUrl().$my_product->getUrlKey().'.html' ?>"><img class="product-img" src="<?php echo $this->helper('catalog/image')->init($my_product, 'small_image')->resize(70); ?>" alt="<?php echo $this->stripTags($this->getImageLabel($my_product, 'small_image'), null, true) ?>" width="70" border="0" /></a>
+            <div class="product-description">
+                <h4><a href="<?php echo $this->getUrl().$my_product->getUrlKey().'.html' ?>"><?php echo $this->stripTags($my_product->getName(), null, true); ?></a></h4>
+                <p>
+                <?php
+                    
+                    $short_des = substr($my_product->getShortdescription(),0,100);
+                    $des = substr($my_product->getDescription(),0,100);
+                    if(!empty($short_des)){
+                     echo $short_des;   
+                    }else {
+                     echo $des;   
+                    }
+                ?>
+                </p>
+            </div>
+        </li>
+    <?php endforeach; ?>
+</ul>
+</div>
+</div>   
+</div>
+<div class="review_bestselling_left">
+<h3><?php echo $this->__('Recente beoordelingen');?></h3>
+    <ul>
+      <?php  foreach($_items as $_review):
+          if(!in_array($_review->getData('entity_pk_value'),$review_product_arr)):
+           $review_product_arr[] = $_review->getData('entity_pk_value');
+          $rvproduct = Mage::getModel('catalog/product')->load($_review->getData('entity_pk_value'));
+          $totalrv = 0;
+          $_votes_t = $_review->getRatingVotes();
+          if (count($_votes_t)):
+              foreach ($_votes_t as $_vote_n):
+                  $totalrv = $totalrv+$_vote_n->getValue();
+              endforeach;
+          endif;
+         
+    ?>
+        <li class="clearfix">
+            <div class="review_left">
+
+                <a href="<?php echo $this->getUrl().$rvproduct->getUrlKey().'.html' ?>"><img onclick="window.location='<?php echo $this->getUrl().$rvproduct->getUrlKey().'.html' ?>'" src="<?php echo  $rvproduct->getThumbnailUrl(); ?>" alt="<?php echo $rvproduct->getName()?>" /></a> 
+                <span class="review_count"> <?php echo $totalrv * 2; ?></span>
+
+            </div>
+            <div class="review_right">
+                <h4><a href="<?php echo $this->getUrl().$rvproduct->getUrlKey().'.html' ?>">
+                    <?php //echo $this->escapeHtml($_review->getTitle()) ?>
+                    <?php echo $rvproduct->getName(); ?>
+                    </a>
+                <span>volgens</span> <span class="author"><?php echo $this->escapeHtml($_review->getNickname());  ?></span></h4>
+                <p><?php echo substr(nl2br($this->escapeHtml($_review->getDetail())), 0, 50);  ?></p>
+
+                <?php $reviewUrl = Mage::getUrl('review/product/list/id/', array('id'=> $rvproduct->getId())); ?>
+                <a href="<?php echo $reviewUrl ?>" class="redamore">Lees meer</a>
+            </div>
+        </li>
+<?php
+          endif;
+    endforeach;
+               
+?>  
+        
+
+    </ul>
+<div class="review_block">
+</div>
+</div>
+</div>
+
+<div class="category_des">
+	 <?php 
+	 $currentUrl = Mage::helper('core/url')->getCurrentUrl();
+	 $url = Mage::getSingleton('core/url')->parseUrl($currentUrl);
+	 $path = $url->getPath(); 
+	 $path = str_replace('/merken/','',$path);
+	 $path = str_replace('/','_',$path);
+	 $path = str_replace('.html','',$path);
+	 echo $this->getLayout()->createBlock('cms/block')->setBlockId($path)->toHtml(); ?>   
+</div>

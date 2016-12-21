@@ -1,0 +1,49 @@
+<?php $_product  = Mage::registry('current_product'); ?>
+<?php if( $_product->getTypeId() == 'simple' ): ?>
+	
+	<?php // Updaten qty van simpel product ?>		
+	
+			<?php 
+			$qty = (int)Mage::getModel('cataloginventory/stock_item')
+								->loadByProduct($_product)->getQty();
+						
+			$qtytext = 'Nog ' . $qty . ' op voorraad';
+			if($qty < 1) $qtytext = 'Niet op voorraad';
+		?>
+		<script>
+		document.getElementById("qty-text").innerHTML = "<?php echo $qtytext; ?>";
+		</script>
+
+		
+	<?php // Einde updaten qty van simpel product ?>
+
+		<?php if($qty > 0): ?>	
+			<?php $stock_status =  $this->__('in stock');?>
+		<?php else: ?>
+			<?php $stock_status = $this->__('Niet op voorraad');?>
+		<?php endif;?>
+
+
+		<script>
+		var element = document.getElementById("stock_status");
+		element.innerHTML = "<?php echo $stock_status; ?>";
+		</script>
+
+	<?php // Einde updaten stock status ?>
+
+	<?php // Begin updaten levertijd ?>
+
+		<?php if($qty > 0): ?>	
+			<?php $levertijd =  $this->__('Voor 21:00 besteld, morgen in huis.');?>
+		<?php else: ?>
+			<?php $levertijd = $this->__('Levertijd 3 - 7 werkdagen.');?>
+		<?php endif;?>
+
+	<script>
+	var element = document.getElementById("levertijd");
+	element.innerHTML = "<?php echo $levertijd; ?>";
+	</script>
+
+	<?php // Einde updaten levertijd ?>
+	
+<?php endif; ?>

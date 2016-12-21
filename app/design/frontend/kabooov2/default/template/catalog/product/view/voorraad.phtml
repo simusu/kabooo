@@ -1,0 +1,37 @@
+<?php $_product  = Mage::registry('current_product'); ?>
+
+<?php if( $_product->getTypeId() == 'simple' ): // Voorraad bij simpel product ?>
+
+	<?php 
+	$qty = (int)Mage::getModel('cataloginventory/stock_item')
+					->loadByProduct($_product)->getQty();
+	?>
+	<div class="<?php if ($qty > 0) { echo "stoke_info"; } else { echo "niet_op_voorraad"; } ?>">
+		<h4 class="<?php if ($qty > 0) { echo "in_stock"; } else { echo "not_in_stock"; } ?>">
+			<?php if($qty > 0): ?>	
+				<?php echo $this->__('in stock');?>
+			<?php else: ?>
+				<?php echo $this->__('Niet op voorraad');?>
+			<?php endif;?>
+		</h4>
+		<p>
+			<?php if($qty > 0): ?>
+				<?php echo $this->__('Voor 21.00 besteld, morgen in huis.');?>
+			<?php else: ?>
+				<?php echo $this->__('Levertijd 3 - 7 werkdagen');?>
+			<?php endif;?>
+		</p>
+	</div>
+
+<?php else: // Voorraadstatus bij configureerbaar product ?>
+		
+	<div class="stoke_info">
+		<h4 class="in_stock">
+			<?php echo $this->__('in stock');?>
+		</h4>
+		<p>
+			<?php echo $this->__('Voorraad afhankelijk van de gekozen kleur.');?>
+		</p>
+	</div>
+
+<?php endif; ?>

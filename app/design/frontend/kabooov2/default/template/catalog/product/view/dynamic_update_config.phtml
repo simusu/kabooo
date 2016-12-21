@@ -1,0 +1,12 @@
+<?php $_product  = Mage::registry('current_product'); ?>
+<p>
+
+<?php
+foreach ($_product->getTypeInstance(true)->getUsedProducts ( null, $_product) as $simple) {
+     $stock = Mage::getModel('cataloginventory/stock_item')->loadByProduct($simple)->getQty();
+?>
+<span id="<?php echo $simple->getId() ?>" class="qty_simple no-display"><?php echo $this->__('Gekozen kleur: %s in voorraad',(int)$stock);?></span>
+<?php
+  }
+?>
+</p>

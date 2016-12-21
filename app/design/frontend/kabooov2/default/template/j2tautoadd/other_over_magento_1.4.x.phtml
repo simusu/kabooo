@@ -1,0 +1,50 @@
+<?php
+/**
+ * Magento
+ *
+ * NOTICE OF LICENSE
+ *
+ * This source file is subject to the Open Software License (OSL 3.0)
+ * that is available through the world-wide-web at this URL:
+ * http://opensource.org/licenses/osl-3.0.php
+ * If you did not receive a copy of the license and are unable to
+ * obtain it through the world-wide-web, please send an email
+ * to license@j2t-design.com so we can send you a copy immediately.
+ *
+ * @category   Magento extension
+ * @package    J2T_Autoadd
+ * @copyright  Copyright (c) 2009 J2T DESIGN. (http://www.j2t-design.net)
+ * @license    http://opensource.org/licenses/osl-3.0.php  Open Software License (OSL 3.0)
+ */
+?>
+
+<?php $_helper = $this->helper('catalog/output'); ?>
+<?php if ($rules = $this->getExtraDetails()):?>
+<?php foreach($rules as $rule):?>
+    <table class="data-table autoadd-table" id="autoadd-product-table-<?php echo $rule->getRuleId();?>">
+        <thead>
+            <tr>
+                <th colspan="3"><?php if($label = $rule->getStoreLabel()): echo $this->htmlEscape($label); else: echo $this->htmlEscape($rule->getTitle()); endif; ?></th>
+            </tr>
+        </thead>
+        <tbody>
+            <?php if ($products = $this->getProducts($rule->getResult())):?>
+            <?php foreach($products as $product):?>
+            <tr>
+                <td><a href="<?php echo $product->getProductUrl() ?>" title="<?php echo $this->stripTags($this->getImageLabel($product, 'small_image'), null, true) ?>" class="product-image"><img src="<?php echo $this->helper('catalog/image')->init($product, 'small_image')->resize(35); ?>" width="35" height="35" alt="<?php echo $this->stripTags($this->getImageLabel($product, 'small_image'), null, true) ?>" /></a></td>
+                <td><a href="<?php echo $product->getProductUrl() ?>" title="<?php echo $this->stripTags($product->getName(), null, true) ?>"><?php echo $_helper->productAttribute($product, $product->getName(), 'name') ?></a>
+                    <?php //echo $this->htmlEscape($product->getName()) ?>                    
+                    <?php echo $this->getProductInventoryLevel($product);?>
+                </td>
+                <td class="a-right">
+                    <?php echo Mage::helper('core')->currency($product->getFinalPrice(),true,false);  ?>
+                </td>
+            </tr>
+            <?php endforeach;?>
+            <?php endif;?>
+        </tbody>
+    </table>
+    <script type="text/javascript">decorateTable('autoadd-product-table-<?php echo $rule->getRuleId();?>')</script>
+<?php endforeach;?>
+<?php endif; ?>
+

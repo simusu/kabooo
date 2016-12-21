@@ -1,0 +1,656 @@
+<?php
+/**
+ * Magento
+ *
+ * NOTICE OF LICENSE
+ *
+ * This source file is subject to the Academic Free License (AFL 3.0)
+ * that is bundled with this package in the file LICENSE_AFL.txt.
+ * It is also available through the world-wide-web at this URL:
+ * http://opensource.org/licenses/afl-3.0.php
+ * If you did not receive a copy of the license and are unable to
+ * obtain it through the world-wide-web, please send an email
+ * to license@magentocommerce.com so we can send you a copy immediately.
+ *
+ * DISCLAIMER
+ *
+ * Do not edit or add to this file if you wish to upgrade Magento to newer
+ * versions in the future. If you wish to customize Magento for your
+ * needs please refer to http://www.magentocommerce.com for more information.
+ *
+ * @category    design
+ * @package     base_default
+ * @copyright   Copyright (c) 2012 Magento Inc. (http://www.magentocommerce.com)
+ * @license     http://opensource.org/licenses/afl-3.0.php  Academic Free License (AFL 3.0)
+ */
+
+/**
+ * Product view template
+ *
+ * @see Mage_Catalog_Block_Product_View
+ * @see Mage_Review_Block_Product_View
+ */
+?>
+<?php $_helper = $this->helper('catalog/output'); ?>
+<?php $_product = $this->getProduct(); ?>
+<script type="text/javascript">
+    var optionsPrice = new Product.OptionsPrice(<?php echo $this->getJsonConfig() ?>);
+</script>
+<?php
+ $categoryIds = $_product->getCategoryIds();
+
+        if(count($categoryIds) ){
+            $firstCategoryId = $categoryIds[0];
+            $_category = Mage::getModel('catalog/category')->load($firstCategoryId);
+
+             $catgoryname = $_category->getUrl();
+        }
+?>
+<?php // Korte beschrijving maken
+$short_descr = $_helper->productAttribute($_product, nl2br($_product->getShortDescription()), 'short_description');
+$descr = $_helper->productAttribute($_product, $_product->getDescription(), 'description');
+
+if(empty($short_descr)) $short_descr = $descr;
+
+function shorten_string($string, $wordsreturned)
+{
+  $retval = $string;
+  $string = preg_replace('/(?<=\S,)(?=\S)/', ' ', $string);
+  $string = str_replace("\n", " ", $string);
+  $array = explode(" ", $string);
+  if (count($array)<=$wordsreturned)
+  {
+    $retval = $string;
+  }
+  else
+  {
+    array_splice($array, $wordsreturned);
+    $retval = implode(" ", $array)." ...";
+  }
+  return $retval;
+}
+//
+$descr_short = str_replace(array('<div>', '</div>'), array('<p>', '</p>'), $short_descr);
+$descr_short = shorten_string($descr_short, 30);
+
+?>
+<div id="messages_product_view"><?php echo $this->getMessagesBlock()->getGroupedHtml() ?></div>
+<div id="pcategoryname" class="<?php echo $catgoryname;?>" style="display: none;"></div>
+<div class="product-view">
+    <div class="product-essential clearfix">
+    <form action="<?php echo $this->getSubmitUrl($_product) ?>" method="post" id="product_addtocart_form"<?php if($_product->getOptions()): ?> enctype="multipart/form-data"<?php endif; ?>>
+        <div class="clearfix product-top">
+            <div class="product-top-left">
+                <div class="product-img-box">
+                <div class="product-name mobile_product_name">
+                        <h1>
+                        <?php if ($_product->getData("merken")):?>
+                    		<?php echo $_product->getAttributeText('merken') ?>
+                    	<?php endif;?>
+                    	<?php echo $_helper->productAttribute($_product, $_product->getName(), 'name') ?>
+                    	<?php if ($_product->getData("inhoud")):?>
+                    		<?php echo "(" . $_product->getAttributeText('inhoud') . ")" ?>
+                    	<?php endif;?>
+                        </h1>
+                    </div>
+                <?php echo $this->getChildHtml('media') ?>
+                </div>
+            </div>
+            <div class="product-top-right">
+                <div class="product-shop clearfix">
+
+                <div class="product-shop-left">
+                    <div class="product-name">
+                        <h1>
+                        <?php if ($_product->getData("merken")):?>
+                    		<?php echo $_product->getAttributeText('merken') ?>
+                    	<?php endif;?>
+                    	<?php echo $_helper->productAttribute($_product, $_product->getName(), 'name') ?>
+                    	<?php if ($_product->getData("inhoud")):?>
+                    		<?php echo "(" . $_product->getAttributeText('inhoud') . ")" ?>
+                    	<?php endif;?>
+                        </h1>
+                    </div>
+                    <?php echo $this->getReviewsSummaryHtml($_product, false, true)?>
+                     <?php if ($descr_short):?>
+                        <div class="short-description">
+                            <h2><?php echo $this->__('Quick Overview') ?></h2>
+                            <div class="std"><?php echo $descr_short ?></div>
+                        </div>
+                    <?php endif;?>
+                    <a href="#end">Lees meer</a>
+                </div>
+                <div class="product-shop-right">
+                    <?php echo $this->getChildHtml('alert_urls') ?>
+                    <?php echo $this->getChildHtml('product_type_data') ?>
+                    <?php echo $this->getTierPriceHtml() ?>
+                    <?php echo $this->getChildHtml('extrahint') ?>
+
+                    <div class="product_voorraad">
+						<?php if( $_product->getTypeId() == 'simple' ): // Voorraad bij simpel product ?>
+							<?php
+							$qty = (int)Mage::getModel('cataloginventory/stock_item')
+											->loadByProduct($_product)->getQty();
+							?>
+							<div class="<?php if ($qty > 0) { echo "stoke_info"; } else { echo "niet_op_voorraad"; } ?>">
+								<h4 class="<?php if ($qty > 0) { echo "in_stock"; } else { echo "not_in_stock"; } ?>" id="stock_status">
+									<?php if($qty > 0): ?>
+										<?php echo $this->__('in stock');?>
+									<?php else: ?>
+										<?php echo $this->__('Niet op voorraad');?>
+									<?php endif;?>
+								</h4>
+								<p id="levertijd">
+									<?php if($qty > 0): ?>
+										<?php echo $this->__('Voor 21.00 besteld, morgen in huis.');?>
+									<?php else: ?>
+										<?php echo $this->__('Levertijd 3 - 7 werkdagen');?>
+									<?php endif;?>
+								</p>
+							</div>
+
+						<?php else: // Voorraadstatus bij configureerbaar product ?>
+
+							<div class="stoke_info">
+								<h4 class="in_stock">
+									<?php echo $this->__('in stock');?>
+								</h4>
+									<?php echo $this->getChildHtml('dynamic_update_config') ?>
+							</div>
+
+						<?php endif; ?>
+                    </div>
+                   <div class="display-size">
+                   <?php echo $this->getChildHtml('upsell_products') ?>
+                   </div>
+                    <?php if (!$this->hasOptions()):?>
+                        <div class="add-to-box">
+                            <?php if($_product->isSaleable()): ?>
+                                <?php echo $this->getChildHtml('addtocart') ?>
+                                <?php if( $this->helper('wishlist')->isAllow() || $_compareUrl=$this->helper('catalog/product_compare')->getAddUrl($_product)): ?>
+                                    <span class="or"><?php echo $this->__('OR') ?></span>
+                                <?php endif; ?>
+                            <?php endif; ?>
+                            <?php echo $this->getChildHtml('addto') ?>
+                        </div>
+                        <?php echo $this->getChildHtml('extra_buttons') ?>
+                    <?php elseif (!$_product->isSaleable()): ?>
+                        <div class="add-to-box">
+                            <?php echo $this->getChildHtml('addto') ?>
+                        </div>
+                    <?php endif; ?>
+
+
+
+                    <?php echo $this->getChildHtml('other');?>
+
+                    <?php if ($_product->isSaleable() && $this->hasOptions()):?>
+                        <?php echo $this->getChildChildHtml('container1', '', true, true) ?>
+                    <?php endif;?>
+                     <div class="clearer"></div>
+                    <?php if ($_product->isSaleable() && $this->hasOptions()):?>
+                        <?php echo $this->getChildChildHtml('container2', '', true, true) ?>
+                    <?php endif;?>
+                    <img src="/skin/frontend/knipengov2/default/images/product_paymentimage_2.png" width="253" height="26" alt="">
+
+                </div>
+        </div>
+            </div>
+        </div>
+        <div class="no-display">
+            <input type="hidden" name="product" value="<?php echo $_product->getId() ?>" />
+            <input type="hidden" name="related_product" id="related-products-field" value="" />
+        </div>
+
+    </form>
+    <script type="text/javascript">
+    //<![CDATA[
+        var productAddToCartForm = new VarienForm('product_addtocart_form');
+        productAddToCartForm.submit = function(button, url) {
+            if (this.validator.validate()) {
+                var form = this.form;
+                var oldUrl = form.action;
+
+                if (url) {
+                   form.action = url;
+                }
+                var e = null;
+                try {
+                    this.form.submit();
+                } catch (e) {
+                }
+                this.form.action = oldUrl;
+                if (e) {
+                    throw e;
+                }
+
+                if (button && button != 'undefined') {
+                    button.disabled = true;
+                }
+            }
+        }.bind(productAddToCartForm);
+
+        productAddToCartForm.submitLight = function(button, url){
+            if(this.validator) {
+                var nv = Validation.methods;
+                delete Validation.methods['required-entry'];
+                delete Validation.methods['validate-one-required'];
+                delete Validation.methods['validate-one-required-by-name'];
+                // Remove custom datetime validators
+                for (var methodName in Validation.methods) {
+                    if (methodName.match(/^validate-datetime-.*/i)) {
+                        delete Validation.methods[methodName];
+                    }
+                }
+
+                if (this.validator.validate()) {
+                    if (url) {
+                        this.form.action = url;
+                    }
+                    this.form.submit();
+                }
+                Object.extend(Validation.methods, nv);
+            }
+        }.bind(productAddToCartForm);
+    //]]>
+    </script>
+    </div>
+    <div class="short_mobile_960">
+    <div class="product-shop">
+        <div class="product-shop-left">
+            <div class="product-name">
+                <h1><?php echo $this->__('Productomschrijving');?></h1>
+            </div>
+            <?php echo $this->getReviewsSummaryHtml($_product, false, true)?>
+             <?php if ($descr):?>
+                <div class="short-description">
+                    <div class="std"><?php echo $descr; ?></div>
+                </div>
+            <?php endif;?>
+        </div>
+    </div>
+    </div>
+    <div class="related-product">
+        <?php //echo $this->getChildHtml('related_product');?>
+<?php
+if($_product->getTypeId() == "configurable") {
+    $ids = $_product->getTypeInstance()->getUsedProductIds();
+?>
+<div class="block block-related">
+    <div class="block-title">
+        <strong><span><?php echo $this->__('Order multiple colors at once') ?></span></strong>
+    </div>
+    <div class="block-content">
+        <!--p class="block-subtitle"><?php echo $this->__('Check items to add to the cart or') ?>&nbsp;<a href="#" onclick="selectAllRelated(this); return false;"><?php echo $this->__('select all') ?></a></p-->
+        <ol class="mini-products-list" id="block-related">
+        <li class="full">
+            <ul>
+                <li class="releted_one"><?php echo $this->__('Kleur');?></li>
+                <li class="releted_two"><?php echo $this->__('Voorraad');?></li>
+                <li class="releted_three"><?php echo $this->__('levertijd');?></li>
+                <li class="releted_four"><?php echo $this->__('prijs');?></li>
+            </ul>
+        </li>
+        <?php foreach($ids as $id):
+        $_item = Mage::getModel('catalog/product')->load($id);
+
+        //print_r($_item);
+
+        //exit();
+         ?>
+            <li class="item">
+
+                <div class="product">
+                    <!--a href="<?php echo $_item->getProductUrl() ?>" title="<?php echo $this->htmlEscape($_item->getName()) ?>" class="product-image"><img src="<?php echo $this->helper('catalog/image')->init($_item, 'thumbnail')->resize(50) ?>" width="50" height="50" alt="<?php echo $this->htmlEscape($_item->getName()) ?>" /></a-->
+                    <div class="product-details">
+                        <div class="item_product_one">
+                            <p class="product-name"><a><?php echo $this->htmlEscape($_item->getName()) ?></a></p>
+                         </div>
+                        <div class="item_product_two">
+                            <?php
+                            $qty = (int)Mage::getModel('cataloginventory/stock_item')->loadByProduct($_item)->getQty();
+                            if($qty > 0){
+                                echo $qty . $this->__(' stuks op voorraad');
+                            }else{
+                              echo $this->__('Out of stock');
+                            }
+                            ?>
+                        </div>
+                        <div class="item_product_three">
+                        <?php
+                         if($qty > 0){
+                                echo $this->__('Direct');
+                            }else{
+                              	echo $this->__('3 tot 8 dagen');
+                            }
+                        ?>
+                        </div>
+                        <div class="item_product_four">
+                        <?php echo $this->getPriceHtml($_item, true, '-related') ?>
+                        <form action="<?php echo $this->getAddToCartUrl($_item) ?>" method="post" id="product_addtocart_form_<?php echo $_item->getId()?>"<?php if($_item->getOptions()): ?> enctype="multipart/form-data"<?php endif; ?>>
+                        	<?php if(!$_item->isGrouped()): ?>
+                        		<input type="text" name="qty" id="qty" maxlength="12" value="<?php echo ($this->getMinimalQty($_item)?$this->getMinimalQty($_item):1) ?>" />
+                        		<label for="qty"><?php echo $this->__('Qty') ?>:</label>
+                        	<?php endif; ?>
+                        	<button type="button" onclick="this.form.submit()"><span><span><span><?php echo $this->__('Bestel') ?></span></span></span></button>
+                        </form>
+                        <?php if ($this->helper('wishlist')->isAllow()) : ?>
+                            <a href="<?php echo $this->getAddToWishlistUrl($_item) ?>" class="link-wishlist"><?php echo $this->__('Add to Wishlist') ?></a>
+                        <?php endif; ?>
+                        </div>
+                    </div>
+                </div>
+            </li>
+        <?php endforeach ?>
+        </ol>
+        <script type="text/javascript">decorateList('block-related', 'none-recursive')</script>
+        <div class="see_all"><a href="javascript:void(0)" id="readall"><?php echo $this->__('more colors');?></a></div>
+    </div>
+    <script type="text/javascript">
+    //<![CDATA[
+    $$('.related-checkbox').each(function(elem){
+        Event.observe(elem, 'click', addRelatedToProduct)
+    });
+
+    var relatedProductsCheckFlag = false;
+    function selectAllRelated(txt){
+        if (relatedProductsCheckFlag == false) {
+            $$('.related-checkbox').each(function(elem){
+                elem.checked = true;
+            });
+            relatedProductsCheckFlag = true;
+            txt.innerHTML="<?php echo $this->__('unselect all') ?>";
+        } else {
+            $$('.related-checkbox').each(function(elem){
+                elem.checked = false;
+            });
+            relatedProductsCheckFlag = false;
+            txt.innerHTML="<?php echo $this->__('select all') ?>";
+        }
+        addRelatedToProduct();
+    }
+
+    function addRelatedToProduct(){
+        var checkboxes = $$('.related-checkbox');
+        var values = [];
+        for(var i=0;i<checkboxes.length;i++){
+            if(checkboxes[i].checked) values.push(checkboxes[i].value);
+        }
+        if($('related-products-field')){
+            $('related-products-field').value = values.join(',');
+        }
+    }
+    //]]>
+    jQuery("#readall" ).click(function() {
+      jQuery(this).hide();
+      jQuery('#block-related').css('max-height','100%');
+    });
+    </script>
+</div>
+<?php
+}
+?>
+
+    </div>
+    <div class="bundle_product clearfix">
+        <?php echo $this->getChildHtml('product_additional_data') ?>
+    </div>
+    <div id="preview" class="product_review_list clearfix">
+        <div class="review_list_left">
+            <?php echo $this->getChildHtml('product_review') ?>
+        </div>
+    </div>
+    <div class="product-collateral" id="productdes">
+        <?php //echo $this->getChildHtml('upsell_products') ?>
+         <?php
+        $serieId = $_helper->productAttribute($_product, $_product->getSerie(), 'serie');
+        $attributeCode = 'serie';
+        $visibility = array(
+		   Mage_Catalog_Model_Product_Visibility::VISIBILITY_BOTH,
+		   Mage_Catalog_Model_Product_Visibility::VISIBILITY_IN_CATALOG
+		);
+        $products = Mage::getModel('catalog/product')
+                    ->getCollection()
+                    ->addAttributeToSelect('*')
+                    ->setPageSize(10)
+					->addAttributeToFilter($attributeCode, $serieId)
+					->addAttributeToFilter('visibility', $visibility)
+					->addAttributeToFilter(
+   					 'status',
+    				array('eq' => Mage_Catalog_Model_Product_Status::STATUS_ENABLED)
+);
+
+// print all products
+ //echo "<pre>"; print_r($products->getItems()); echo "</pre>";
+ if(count($products) > 0):
+ $_helper = $this->helper('catalog/output');
+ ?>
+ <div class="box-collateral box-up-sell">
+    <h2>
+    	<?php echo $this->__('Meer') . ' '; ?>
+    	<?php if ($_product->getData("merken")):?>
+        	<?php echo $_product->getAttributeText('merken') ?>
+    	<?php endif;?>
+    	<?php if ($_product->getData("serie")):?>
+			<?php echo $_product->getAttributeText('serie') ?>
+		<?php endif;?>
+		<?php echo $this->__('producten'); ?>
+    </h2>
+    <div class="products-grid" id="upsell-product-table">
+    <?php // $this->setColumnCount(5); // uncomment this line if you want to have another number of columns. also can be changed in layout ?>
+        <ul>
+       <?php $counter=0; foreach ($products as $_link): ?>
+            <li>
+                <a href="<?php echo $_link->getProductUrl() ?>" title="<?php echo $this->htmlEscape($_link->getName()) ?>" class="product-image"><img src="<?php echo $this->helper('catalog/image')->init($_link, 'small_image')->resize(140) ?>" width="140" height="140" alt="<?php echo $this->htmlEscape($_link->getName()) ?>" /></a>
+                <h3 class="product-name"><a href="<?php echo $_link->getProductUrl() ?>" title="<?php echo $this->htmlEscape($_link->getName()) ?>">
+                <?php
+                	$upsell_merk = $_link->getResource()->getAttribute('merken')->getFrontend()->getValue($_link);
+                	$upsell_name = $_helper->productAttribute($_link, $_link->getName(), 'name');
+                	$upsell_inhoud = $_link->getResource()->getAttribute('inhoud')->getFrontend()->getValue($_link);
+                	$upsell_serie = $_link->getResource()->getAttribute('serie')->getFrontend()->getValue($_link);
+                	$upsell_categorie = $_link->getResource()->getAttribute('categorie')->getFrontend()->getValue($_link);
+                	$upsell_len = $upsell_merk . $upsell_name . $upsell_inhoud;
+                ?>
+	                 <span class="name <?php if(strlen($upsell_len) > 50) echo "long-name"; ?>"><?php echo $upsell_merk . ' ' . $upsell_name . ' (' . $upsell_inhoud . ')'; ?></span>
+                </a>
+                </h3>
+                 <div class="product_static_text">
+                  <div class="product_static_text-inner">
+                        <span class="shampoo">
+							<?php if ($upsell_serie):?>
+								<?php echo $upsell_serie; ?>
+							<?php endif;?>
+                        </span>
+                        <span class="bonacure">
+                            <?php if ($upsell_categorie):?>
+								<?php echo $upsell_categorie; ?>
+							<?php endif;?>
+                        </span>
+                  </div>
+                </div>
+                <?php echo $this->getPriceHtml($_link, true, '-upsell') ?>
+                <?php //echo $this->getReviewsSummaryHtml($_link) ?>
+                <form action="<?php echo $this->getAddToCartUrl($_link) ?>" method="post" id="product_addtocart_form_<?php echo $_link->getId()?>"<?php if($_link->getOptions()): ?> enctype="multipart/form-data"<?php endif; ?>>
+                        	<button type="button" class="button-cart-upsell" onclick="this.form.submit()"><span><?php echo $this->__('Add to Cart') ?></span></button>
+                        </form>
+            </li>
+           <?php endforeach; ?>
+        </ul>
+
+    </div>
+    <script type="text/javascript">decorateTable('upsell-product-table')</script>
+</div>
+<?php endif ?>
+<!--
+<?php foreach ($this->getChildGroup('detailed_info', 'getChildHtml') as $alias => $html):?>
+        <div class="box-collateral <?php echo "box-{$alias}"?>">
+            <?php if ($title = $this->getChildData($alias, 'title')):?>
+            <h2><?php echo $_helper->productAttribute($_product, $_product->getName(), 'name') ?></h2>
+            <?php endif;?>
+            <?php echo $html; ?>
+        </div>
+<?php endforeach;?>
+-->
+<div id="productdes2" class="product-collateral">
+    <div class="box-collateral box-description">
+        <h2>
+        	<?php if ($_product->getData("merken")):?>
+                <?php echo $_product->getAttributeText('merken') ?>
+            <?php endif;?>
+            <?php echo $_helper->productAttribute($_product, $_product->getName(), 'name') ?>
+        	<?php if ($_product->getData("inhoud")):?>
+             	<?php echo "(" . $_product->getAttributeText('inhoud') . ")" ?>
+        	<?php endif;?>
+        </h2>
+        <div id="end" class="std">
+            <?php echo $descr; ?>
+        </div>
+        <?php if ($_product->getData("kabooo_gebruikersaanwijzing")):?>
+			<div class="gebruiksaanwijzing">
+			<h4><?php echo $this->__('Gebruiksaanwijzing');?></h4>
+			<?php echo $_product->getData("kabooo_gebruikersaanwijzing"); ?>
+        <?php endif;?>
+    </div>
+</div>
+        <?php //echo $this->getChildHtml('upsell_products') ?>
+        <?php //echo $this->getChildHtml('product_additional_data') ?>
+        <?php echo $this->getChildHtml('dynamic_update') ?>
+    </div>
+</div>
+
+<script type="text/javascript">
+jQuery(function() {
+  jQuery('a[href*=#]:not([href=#])').click(function() {
+    if (location.pathname.replace(/^\//,'') == this.pathname.replace(/^\//,'') && location.hostname == this.hostname) {
+      var target = jQuery(this.hash);
+      target = target.length ? target : jQuery('[name=' + this.hash.slice(1) +']');
+      if (target.length) {
+        jQuery('html,body').animate({
+          scrollTop: target.offset().top-300
+        }, 500);
+        return false;
+      }
+    }
+  });
+});
+</script>
+<script type="text/javascript">
+ jQuery(document).ready(function($){
+ var classname = $("#pcategoryname").attr('class');
+ //alert(classname);
+ //$j('.category_nav li a').find('data-categoryname="'+classname+'"').parent().addClass('active');
+ //$( ".category_nav li a[data-categoryname*='"+classname+"']" ).parent().addClass('active');
+ $('.category_nav li:has(a[href="'+classname+'"])').addClass('active');
+ //jQuery('.category_nav li a').attr('data-categoryname="'+classname+'"').parent().addClass('active');
+ })
+</script>
+
+<!-- Voorraad -->
+<span style='display:none;'><?php
+	if ($_product->getTypeId() === 'configurable') {
+			echo "adwords-wel-op-voorraad";
+	} elseif ($qtyStock < 1) {
+			echo "adwords-niet-op-voorraad";
+		} else {
+			echo "adwords-wel-op-voorraad";
+			}
+		?>
+</span>
+<!-- Voorraad -->
+
+<!--- Itemprop -->
+<?php
+$speciale_prijs = number_format($_product->getSpecialPrice(), '2', '.', ',');
+$prijs = number_format($_product->getPrice(), '2', '.', ',');
+
+            	$productId = $_product->getId();
+$reviews = Mage::getModel('review/review')
+				->getResourceCollection()
+				->addStoreFilter(Mage::app()->getStore()->getId())
+				->addEntityFilter('product', $productId)
+				->addStatusFilter(Mage_Review_Model_Review::STATUS_APPROVED)
+				->setDateOrder()
+				->addRateVotes();
+
+	$avg = 0;
+	$ratings = array();
+	if (count($reviews) > 0) {
+		foreach ($reviews->getItems() as $review) {
+			foreach( $review->getRatingVotes() as $vote ) {
+				$ratings[] = $vote->getPercent();
+			}
+		}
+		$avg = array_sum($ratings)/count($ratings);
+		$reviewcount = count($ratings);
+	}
+
+	if ($reviewcount == 0) {
+		$reviewcount = $reviewcount + 0;
+	 }
+
+                ?>
+<div itemscope itemtype="http://schema.org/Product">
+
+  <meta itemprop="name" content="<?php echo $_helper->productAttribute($_product, $_product->getName(), 'name') . " " ?>" />
+  <meta itemprop="sku" content="<?php echo $_product->getSku(); ?>" />
+  <meta itemprop="brand" content="<?php echo $_product->getAttributeText('merken') ?>" />
+		<div itemprop="offers" itemscope itemtype="http://schema.org/Offer">
+			<meta itemprop="price" content="<?php if($speciale_prijs == '0') { echo $prijs; } else { echo $speciale_prijs; } ?>" />
+			<meta itemprop="priceCurrency" content="EUR" />
+			<meta itemprop="itemCondition" content="http://schema.org/NewCondition" />
+			<meta itemprop="availability" content="<?php if ($qty >= 1) { echo "http://schema.org/InStock"; } elseif ($_product->getTypeId() === 'configurable') { echo "http://schema.org/InStock"; } else { echo "http://schema.org/OutOfStock"; } ?>" />
+			<meta itemprop="gtin13" content="<?php echo $_product->getEan() ?>" />
+		</div>
+
+ <div itemprop="aggregateRating" itemscope itemtype="http://schema.org/AggregateRating">
+
+ <meta itemprop="ratingValue" content="<?php echo (round($avg)); ?>"/>
+ <meta itemprop="reviewCount" content="<?php echo $reviewcount; ?>"/>
+ <meta itemprop="bestRating" content="100"/>
+ <meta itemprop="worstRating" content="0"/>
+
+
+</div>
+
+</div>
+
+<?php
+    $specialPrice = $_product->getSpecialPrice();
+    if($specialPrice) {
+        $regularPrice = $_product->getPrice();
+        $discount =  round(($regularPrice-$specialPrice)/$regularPrice*100) .'%';?>
+		<span style='display:none;' data-json='{"adparameter1":"€ <?php echo $specialPrice; ?>", "adparameter2":"<?php echo $discount; ?>"}'></span>
+    <?php
+    } else{ ?>
+		<span style='display:none;' data-json='{"adparameter1":"€ <?php echo $_product->getPrice(); ?>"}'></span>
+	<?php } ?>
+
+
+<script type="text/javascript">
+
+// Iframes resize to 100% width
+
+function adjustIframes()
+{
+  $('iframe').each(function(){
+    var
+    $this       = $(this),
+    proportion  = $this.data( 'proportion' ),
+    w           = $this.attr('width'),
+    actual_w    = $this.width();
+
+    if ( ! proportion )
+    {
+        proportion = $this.attr('height') / w;
+        $this.data( 'proportion', proportion );
+    }
+
+    if ( actual_w != w )
+    {
+        $this.css( 'height', Math.round( actual_w * proportion ) + 'px' );
+    }
+  });
+}
+$(window).on('resize load',adjustIframes);
+
+</script>

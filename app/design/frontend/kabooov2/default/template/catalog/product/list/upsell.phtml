@@ -1,0 +1,106 @@
+<?php
+/**
+ * Magento
+ *
+ * NOTICE OF LICENSE
+ *
+ * This source file is subject to the Academic Free License (AFL 3.0)
+ * that is bundled with this package in the file LICENSE_AFL.txt.
+ * It is also available through the world-wide-web at this URL:
+ * http://opensource.org/licenses/afl-3.0.php
+ * If you did not receive a copy of the license and are unable to
+ * obtain it through the world-wide-web, please send an email
+ * to license@magentocommerce.com so we can send you a copy immediately.
+ *
+ * DISCLAIMER
+ *
+ * Do not edit or add to this file if you wish to upgrade Magento to newer
+ * versions in the future. If you wish to customize Magento for your
+ * needs please refer to http://www.magentocommerce.com for more information.
+ *
+ * @category    design
+ * @package     base_default
+ * @copyright   Copyright (c) 2012 Magento Inc. (http://www.magentocommerce.com)
+ * @license     http://opensource.org/licenses/afl-3.0.php  Academic Free License (AFL 3.0)
+ */
+?>
+
+<?php 
+$product = $this->getProduct() ;
+$product_main_price = $product->getFinalPrice();
+$inhoud = $product->getAttributeText('inhoud');
+?>
+<?php 
+
+
+if(count($this->getItemCollection()->getItems())): ?>
+<div class="product-options">
+<dl class="last">
+    <dt><label>Inhoud:</label></dt>
+
+<dd class="last">
+<div class="input-box">
+    <select id="dynamic_select">
+    
+        <?php //$this->setColumnCount(6); // uncomment this line if you want to have another number of columns. also can be changed in layout ?>
+        <?php $this->resetItemsIterator() ?>
+        <option><?php echo $inhoud; ?></option>
+        <?php for($_i=0;$_i<$this->getRowCount();$_i++): ?>
+        <?php for($_j=0;$_j<$this->getColumnCount();$_j++): ?>
+            <?php if($_link=$this->getIterableItem()): ?>
+                <option value="<?php echo $_link->getProductUrl() ?>" <?php if ($_j==0) { echo "class='first'"; } ?>>
+                
+                	
+                    
+                    <?php
+                    $_helper = $this->helper('catalog/output');
+                    $productModel = Mage::getModel('catalog/product');
+                    $_product = $productModel->load($_link->getId());
+					$_product_price = $_product->getFinalPrice();
+					$_product_price_dif = $_product_price - $product_main_price;
+					
+					
+					
+                    $dimensionInches =  $_product->getAttributeText('inhoud');
+                    if($dimensionInches != "") {
+                        ?>
+                        <?php echo $dimensionInches; ?>
+                        <?php //echo $this->getPriceHtml($_link, true, '-upsell') ?>
+                        
+                        <?php } ?>
+                   
+				
+						<?php if ($_product_price_dif<0) {
+							?>-&nbsp;&euro;&nbsp;<?php
+							echo number_format($_product_price_dif *-1,2,",",".");
+						} else {
+							?>+&nbsp;&euro;&nbsp;<?php
+							echo number_format($_product_price_dif,2,",",".");
+						}
+						?>
+                
+                </option>
+                <?php else: ?>
+                 <!--<li class="empty">&nbsp;</li> -->
+                <?php endif; ?>
+            <?php endfor; ?>
+        <?php endfor; ?>
+    </select>
+    </div>
+</dd>
+</dl>
+    </div>
+<script type="text/javascript">
+ jQuery(function(){
+      
+      jQuery('#dynamic_select').on('change', function () {
+          var url = jQuery(this).val(); // get selected value
+          if (url) { // require a URL
+              window.location = url; // redirect
+          }
+          return false;
+      });
+    });
+
+</script>
+<?php endif ?>
